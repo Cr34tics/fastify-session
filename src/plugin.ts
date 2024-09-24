@@ -48,14 +48,14 @@ export const plugin: FastifyPluginAsync<FastifySessionOptions> = async (
   const secretKeys: Buffer[] = crypto.deriveSecretKeys(key, secret, salt);
   Session.configure({ cookieOptions, secretKeys, store, crypto });
 
-  fastify.decorateRequest("session", null);
+  fastify.decorateRequest("session");
   async function destroySession(this: FastifyRequest) {
     if (!this.session) {
       return;
     }
     await this.session.destroy();
   }
-  fastify.decorateRequest("destroySession", destroySession);
+  fastify.decorateRequest("destroySession");
 
   // decode/create a session for every request
   fastify.addHook("onRequest", async (request) => {
@@ -65,6 +65,7 @@ export const plugin: FastifyPluginAsync<FastifySessionOptions> = async (
     const cookie = cookies[cookieName];
     if (!cookie) {
       request.session = await Session.create();
+      request.destroySession = destroySession;
       log.debug(
         { ...bindings, sessionId: request.session.id },
         "There was no cookie, created an empty session",
